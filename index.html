@@ -1,0 +1,296 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1,minimal-ui" name="viewport">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic|Material+Icons">
+    <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/vue-material.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/theme/default.css">
+  </head>
+
+  <style lang="scss" scoped>
+    .md-app {
+      max-height: 100%;
+      border: 1px solid rgba(#000, .12);
+    }
+
+    .md-drawer {
+      width: 230px;
+      max-width: calc(100vw - 125px);
+    }
+  </style>
+
+  <body>
+    <div id="app">
+      <!-- Your code here -->
+      <template>
+        <div class="page-container">
+          <md-app md-mode="reveal">
+            <md-app-toolbar class="md-primary">
+              <span class="md-title">COVID19 - DOH</span>
+            </md-app-toolbar>
+      
+            <md-app-content>
+                <div class="md-layout" v-for="(result, index) in results">
+                    <div class="md-layout-item ">
+                        <md-card>
+                            <md-card-header>
+                            <md-card-header-text>
+                                <div class="md-title" style="color:green; font-weight: bold;">Recovered</div>
+                                <div class="md-title">{{ result.Recovered }}</div>
+                            </md-card-header-text>
+                    
+                            <md-card-media md-medium>
+                                <img src="img/happy.png" alt="Recovered" width="150" height="150">
+                            </md-card-media>
+                            </md-card-header>
+                        </md-card>
+                        <br>
+                        <canvas id="gender" width="500" height="500"></canvas>
+                      </div>
+                      
+                     <div class="md-layout-item">
+                        <md-card>
+                            <md-card-header>
+                            <md-card-header-text>
+                                <div class="md-title" style="color:red; font-weight: bold;">Died</div>
+                                <div class="md-title">{{ result.Died }}</div>
+                            </md-card-header-text>
+                    
+                            <md-card-media md-medium>
+                                <img src="img/sad.png" alt="Died" width="250">
+                            </md-card-media>
+                            </md-card-header>
+                        </md-card>
+                        <br>
+                        <canvas id="age" width="500" height="500"></canvas>
+                      </div>
+                      
+
+                      <div class="md-layout-item">
+                        <md-card>
+                            <md-card-header>
+                              <md-card-header-text>
+                                <div class="md-title" style="color:darkgoldenrod; font-weight: bold;">Admitted</div>
+                                <div class="md-title">{{ result.Admitted }}</div>
+                              </md-card-header-text>
+                      
+                              <md-card-media md-medium>
+                                <img src="img/sick.png" alt="Admitted" width="250">
+                              </md-card-media>
+                            </md-card-header>
+                          </md-card>
+                          <br>
+                          <div class="md-title" style="color:black; font-weight: bold;">Travel Abroad</div>
+                          <canvas id="abroad" width="500" height="500"></canvas>
+                      </div>
+                      <div class="md-layout-item">
+                          <md-card>
+                            <md-card-header>
+                              <md-card-header-text>
+                                <div class="md-title" style="color:blue; font-weight: bold;">TBA</div>
+                                <div class="md-title">{{ result.TBA }}</div>
+                              </md-card-header-text>
+                      
+                              <md-card-media md-medium>
+                                <img src="img/mask.webp" alt="To be announce" width="250">
+                              </md-card-media>
+                            </md-card-header>
+                        </md-card>
+                      <div>
+                </div>  
+            </md-app-content>
+          </md-app>        
+        </div>
+
+      </template>
+    </div>
+
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/vue-material"></script>
+    <script
+    src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+      
+      Vue.use(VueMaterial.default)
+      const url = 'https://coronavirus-ph-api.now.sh';
+      function sum( obj ) {
+        var sum = 0;
+        for( var el in obj ) {
+            if( obj.hasOwnProperty( el ) ) {
+            sum += parseFloat( obj[el] );
+            }
+        }
+        return sum;
+       
+       }
+
+
+
+      new Vue({
+        el: '#app',
+        name: 'Reveal',
+        data: () => ({
+            menuVisible: false,
+            results: [],
+            labels: ['Male', 'Female'],
+            gender: []
+        }),
+        mounted() {
+          axios.get(url + '/cases').then(response => {
+            this.results = response.data
+
+            var status = response.data.reduce(function(obj, v) {
+                obj[v.status] = (obj[v.status] || 0) + 1;
+                return obj;
+                }, {})
+            status.infected = sum(status)
+
+            var gender = response.data.reduce(function(obj, v) {
+                obj[v.gender] = (obj[v.gender] || 0) + 1;
+                return obj;
+                }, {})
+
+            var abroad = response.data.reduce(function(obj, v) {
+                obj[v.had_recent_travel_history_abroad] = (obj[v.had_recent_travel_history_abroad] || 0) + 1;
+                return obj;
+                }, {})
+            
+            var hospital = response.data.reduce(function(obj, v) {
+                obj[v.hospital_admitted_to] = (obj[v.hospital_admitted_to] || 0) + 1;
+                return obj;
+                }, {}) 
+             
+            console.log(hospital);    
+            this.results = 
+                {'status' : status}            
+                 
+                $( document ).ready(function() {
+                    console.log(gender)
+
+                    data = {
+                        datasets: [{
+                            data: [gender.M, gender.F],
+                            backgroundColor: ['rgb(30, 139, 195, 1)','rgb(255, 99, 132)'],
+                            borderColor: 'rgb(36, 37, 42, 1)',
+                        }],
+
+                        // These labels appear in the legend and in the tooltips when hovering different arcs
+                        labels: [
+                            'Male',
+                            'Female'
+                        ]
+                    };
+                    var ctx = document.getElementById('gender').getContext('2d');
+                    // For a pie chart
+                    var myPieChart = new Chart(ctx, {
+                        type: 'pie',
+                        data: data,
+                    });
+
+                    var arrAge = [];
+
+                    for (var prop in response.data) {
+                        if (response.data.hasOwnProperty(prop)) {
+                            var innerObj = {};
+                            innerObj[0] = response.data[prop].age;
+                            arrAge.push(innerObj[0]);
+                        }
+                    }
+
+                    const ranges = {
+                    "zeronine":{ min:01, max:09},
+                    "onenine":{ min:10, max:19},
+                    "twonine":{ min:20, max:29},
+                    "threenine":{ min:30, max:39},
+                    "fournine":{ min:40, max:49},
+                    "fivenine":{ min:50, max:59},
+                    "sixnine":{ min:60, max:69},
+                    "sevennine":{ min:70, max:79},
+                    "eightnine":{ min:80, max:89},
+                    "ninenine":{ min:90, max:99},
+                    }
+
+                    const sumAge = {};
+                    for (const datum of arrAge) {
+                    var range = Object.keys(ranges).find(r => ranges[r].min<=datum && ranges[r].max>= datum) || "Other";
+                        let entry = sumAge[range];
+                        if (entry) {
+                            ++entry.count;
+                        } else {
+                            sumAge[range] = {age: range, count: 1};
+                        }
+                    }
+
+                    console.log(sumAge)
+                    var v = document.getElementById('age').getContext('2d');
+                    var myChart = new Chart(v, {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: ["1-9", "10-19",  "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99", "TBA"],
+                        datasets: [{
+                        label: 'Age Bracket',
+                        data: [(sumAge.zeronine == undefined) ? 0 : sumAge.zeronine.count, sumAge.onenine.count, sumAge.twonine.count, sumAge.threenine.count, sumAge.fournine.count, sumAge.fivenine.count, sumAge.sixnine.count, sumAge.sevennine.count, sumAge.eightnine.count, sumAge.ninenine.count, sumAge.Other.count],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255,99,132,1)',
+                        borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        scales: {
+                        xAxes: [{
+                            ticks: {
+                            maxRotation: 90,
+                            minRotation: 80
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                            beginAtZero: true
+                            }
+                        }]
+                        }
+                    }
+                    });
+
+
+
+                    data = {
+                        datasets: [{
+                           
+                            data: [abroad.Yes, abroad.No],
+                            backgroundColor: ['rgb(30, 139, 195, 1)','rgb(255, 99, 132)'],
+                            borderColor: 'rgb(36, 37, 42, 1)',
+                        }],
+
+                        labels: ['Yes',
+                            'No'],
+
+                        label: 'Travel Abroad',    
+
+                    };
+                    var a = document.getElementById('abroad').getContext('2d');
+                    // For a pie chart
+                    var myPieChart = new Chart(a, {
+                        type: 'pie',
+                        data: data,
+                    });
+
+                });
+            
+
+            console.log(response.data)
+          })
+
+
+        }
+        
+      })
+
+    </script>
+  </body>
+</html>
