@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic|Material+Icons">
     <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/vue-material.min.css">
     <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/theme/default.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
   </head>
 
   <style lang="scss" scoped>
@@ -18,6 +20,8 @@
       width: 230px;
       max-width: calc(100vw - 125px);
     }
+
+    #map-canvas { height: 650px; }
   </style>
 
   <body>
@@ -116,7 +120,15 @@
             </md-app-content>
           </md-app>        
         </div>
+      </template>
 
+      <template id='v-card-content'>
+        <div class="md-layout" >
+          <div class="md-layout-item md-size-50">
+            <div class="md-title" align="center" style="color:black; font-weight: bold; font-size: 20px;">Checkpoints</div>
+          <div id="map-canvas" class="heatmap"></div>
+          </div>
+        </dvi>   
       </template>
     </div>
 
@@ -127,8 +139,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
     <script>
-       Vue.use(VueMaterial.default)
+      var CardContent = Vue.extend({
+        template: '#v-card-content'
+      });
+      Vue.component('v-card-content', CardContent);
+      Vue.use(VueMaterial.default)
       const url = 'https://coronavirus-ph-api.now.sh';
       function sum( obj ) {
         var sum = 0;
@@ -151,9 +168,13 @@
             results: [],
             labels: ['Male', 'Female'],
             gender: [],
-            test : []
+            test : {},
+            map: null,
+            tileLayer: null,
+            layers: [],
         }),
         mounted() {
+          this.initMap();
           //get cases
           axios.get(url + '/cases').then(response => {
             this.results = response.data
@@ -295,20 +316,45 @@
                         type: 'pie',
                         data: data,
                     });
-
                 });
-            
+                
+                axios.get(url + '/test-results').then(response => {
+                      this.test = response.data;
+                      console.log("test",this.test);
+                })
 
             console.log(response.data)
           })
           //end cases
 
-          axios.get(url + '/test-results').then(response => {
-            console.log("resutls", response.data)
-            this.test = response.data;
-          })
+        },
+        methods: {
+          initMap() {
+            $( document ).ready(function() {
 
-        }
+              this.map = L.map('map-canvas').setView([14.60477,121.105281], 11);
+              this.tileLayer = L.tileLayer(
+                'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png',
+                {
+                  maxZoom: 18,
+                  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>',
+                }
+              );
+              this.tileLayer.addTo(this.map);
+                //start testing results
+              axios.get(url + '/mm-checkpoints').then(response => {
+                layers = response.data;
+                
+                for (const layer of layers) {
+                  marker = new L.marker([layer.lat,layer.lng])
+                        .bindPopup("<b>District:</b>" + layer.district + " <br><b>Location:</b>" + layer.location + "<br><b>Type:</b>" + layer.type)
+                        .addTo(this.map);
+                }
+              })
+               //end
+            });
+          }
+        },
         
       })
 
